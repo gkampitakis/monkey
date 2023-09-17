@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/gkampitakis/monkey/lexer"
 	"github.com/gkampitakis/monkey/parser"
@@ -16,7 +17,7 @@ const PROMPT = ">> "
 
 func Start(in io.Reader, out io.Writer) {
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	scanner := bufio.NewScanner(in)
 	go func() {
