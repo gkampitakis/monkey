@@ -31,6 +31,7 @@ var precedences = map[token.TokenType]ExPrecedence{
 	token.MINUS:    SUM,
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
+	token.LPAREN:   CALL,
 }
 
 type (
@@ -76,6 +77,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.NEQ, p.parseInfixExpression)
 	p.registerInfix(token.LT, p.parseInfixExpression)
 	p.registerInfix(token.GT, p.parseInfixExpression)
+	p.registerInfix(token.LPAREN, p.parseCallExpression)
 
 	// Read two tokens, so curToken and peekToken are both set
 	p.nextToken()
@@ -165,9 +167,11 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	stmt := &ast.ReturnStatement{Token: p.curToken}
 	p.nextToken()
 
-	for !p.curTokenIs(token.SEMICOLON) {
+	stmt.ReturnValue = p.parseExpression(LOWEST)
+	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
+
 	return stmt
 }
 
@@ -185,9 +189,11 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	if !p.expectPeek(token.ASSIGN) {
 		return nil
 	}
+	p.nextToken()
 
-	// TODO: We're skipping the expressions until we encounter a semicolon.
-	for !p.curTokenIs(token.SEMICOLON) {
+	stmt.Value = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
 
@@ -300,10 +306,7 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	p.nextToken()
 
 	for !p.curTokenIs(token.RBRACE) && !p.curTokenIs(token.EOF) {
-		stmt := p.parseStatement()
-		if stmt != nil {
-			block.Statements = append(block.Statements, stmt)
-		}
+		block.Statements = append(block.Statements, p.parseStatement())
 
 		p.nextToken()
 	}
@@ -395,6 +398,45 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	lit.Body = p.parseBlockStatement()
 
 	return lit
+}
+
+func (p *Parser) parseCallArguments() []ast.Expression {
+	args := []ast.Expression{}
+
+	// this handles () case
+	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+
+		return args
+	}
+
+	p.nextToken()
+	args = append(args, p.parseExpression(LOWEST))
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+
+		args = append(args, p.parseExpression(LOWEST))
+	}
+
+	// if we don't have closing ) we stop parsing
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+
+	return args
+}
+
+func (p *Parser) parseCallExpression(left ast.Expression) ast.Expression {
+	exp := &ast.CallExpression{
+		Token:    p.curToken,
+		Function: left,
+	}
+
+	exp.Arguments = p.parseCallArguments()
+
+	return exp
 }
 
 func (p *Parser) parseStatement() ast.Statement {

@@ -2,6 +2,7 @@ package parser_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/gkampitakis/monkey/ast"
@@ -36,7 +37,15 @@ func testReturnStatement(t *testing.T, s ast.Statement) {
 
 func assertParseErrors(t *testing.T, p *parser.Parser, expectedLen int) {
 	t.Helper()
-	require.Len(t, p.Errors(), expectedLen)
+	if len(p.Errors()) != expectedLen {
+		t.Logf(
+			"expected len %d but got %d\n%s",
+			expectedLen,
+			len(p.Errors()),
+			strings.Join(p.Errors(), "\n"),
+		)
+		t.FailNow()
+	}
 }
 
 func testIntegerLiteral(t *testing.T, il ast.Expression, value int) {
@@ -122,7 +131,7 @@ func TestLetStatements(t *testing.T) {
 		}{
 			{"let x = 5;", "x", 5},
 			{"let y = true;", "y", true},
-			{"let foobar = y;", "foobar", "y"},
+			{"let foobar = y;", "foobar", []byte("y")},
 		}
 
 		for _, tc := range tests {
@@ -139,9 +148,7 @@ func TestLetStatements(t *testing.T) {
 			stmt := program.Statements[0]
 			testLetStatement(t, stmt, tc.expectedIdentifier)
 
-			val := stmt.(*ast.LetStatement).Value
-			t.Skip("implementation missing")
-			testLiteralExpression(t, val, tc.expectedValue)
+			testLiteralExpression(t, stmt.(*ast.LetStatement).Value, tc.expectedValue)
 		}
 	})
 
@@ -166,7 +173,7 @@ func TestReturnStatements(t *testing.T) {
 	}{
 		{"return 5;", 5},
 		{"return true;", true},
-		{"return foobar;", "foobar"},
+		{"return foobar;", []byte("foobar")},
 	}
 
 	for _, tc := range tests {
@@ -180,10 +187,7 @@ func TestReturnStatements(t *testing.T) {
 		stmt := program.Statements[0]
 		testReturnStatement(t, stmt)
 
-		returnStmt := stmt.(*ast.ReturnStatement)
-
-		t.Skip("implementation missing")
-		testLiteralExpression(t, returnStmt.ReturnValue, tc.expectedValue)
+		testLiteralExpression(t, stmt.(*ast.ReturnStatement).ReturnValue, tc.expectedValue)
 	}
 }
 
@@ -398,18 +402,18 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 			"!(true == true)",
 			"(!(true == true))",
 		},
-		// {
-		// 	"a + add(b * c) + d",
-		// 	"((a + add((b * c))) + d)",
-		// },
-		// {
-		// 	"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
-		// 	"add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
-		// },
-		// {
-		// 	"add(a + b + c * d / f + g)",
-		// 	"add((((a + b) + ((c * d) / f)) + g))",
-		// },
+		{
+			"a + add(b * c) + d",
+			"((a + add((b * c))) + d)",
+		},
+		{
+			"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+			"add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+		},
+		{
+			"add(a + b + c * d / f + g)",
+			"add((((a + b) + ((c * d) / f)) + g))",
+		},
 	}
 
 	for _, tc := range tests {
@@ -619,6 +623,77 @@ func TestFunctionParameterParsing(t *testing.T) {
 
 		for i, ident := range tc.expectedParams {
 			testLiteralExpression(t, function.Parameters[i], []byte(ident))
+		}
+	}
+}
+
+func TestCallExpressionParsing(t *testing.T) {
+	input := `add(1,2*3,4+5);`
+	l := lexer.New([]byte(input))
+	p := parser.New(l)
+	program := p.ParseProgram()
+	assertParseErrors(t, p, 0)
+
+	require.Len(t, program.Statements, 1)
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(
+		t,
+		ok,
+		fmt.Sprintf(
+			"expected program.Statements[0] to be type of *ast.ExpressionStatement but got %T",
+			program.Statements[0],
+		),
+	)
+	exp, ok := stmt.Expression.(*ast.CallExpression)
+	require.True(t,
+		ok,
+		fmt.Sprintf("expected stmt.Expression to be type of *ast.CallExpression but got %T", stmt),
+	)
+
+	testIdentifier(t, exp.Function, []byte("add"))
+	require.Len(t, exp.Arguments, 3)
+	testLiteralExpression(t, exp.Arguments[0], 1)
+	testInfixExpression(t, exp.Arguments[1], 2, "*", 3)
+	testInfixExpression(t, exp.Arguments[2], 4, "+", 5)
+}
+
+func TestCallExpressionParameterParsing(t *testing.T) {
+	tests := []struct {
+		input         string
+		expectedIdent string
+		expectedArgs  []string
+	}{
+		{
+			input:         "add();",
+			expectedIdent: "add",
+			expectedArgs:  []string{},
+		},
+		{
+			input:         "add(1);",
+			expectedIdent: "add",
+			expectedArgs:  []string{"1"},
+		},
+		{
+			input:         "add(1, 2 * 3, 4 + 5);",
+			expectedIdent: "add",
+			expectedArgs:  []string{"1", "(2 * 3)", "(4 + 5)"},
+		},
+	}
+
+	for _, tc := range tests {
+		l := lexer.New([]byte(tc.input))
+		p := parser.New(l)
+		program := p.ParseProgram()
+		assertParseErrors(t, p, 0)
+
+		stmt := program.Statements[0].(*ast.ExpressionStatement)
+		exp := stmt.Expression.(*ast.CallExpression)
+
+		testIdentifier(t, exp.Function, []byte(tc.expectedIdent))
+		require.Len(t, exp.Arguments, len(tc.expectedArgs))
+
+		for i, arg := range tc.expectedArgs {
+			require.Equal(t, arg, exp.Arguments[i].String())
 		}
 	}
 }
