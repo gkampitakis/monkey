@@ -553,3 +553,72 @@ func TestIfElseExpression(t *testing.T) {
 	)
 	testIdentifier(t, alternative.Expression, []byte("y"))
 }
+
+func TestFunctionLiteralParsing(t *testing.T) {
+	input := `fn(x,y) { x + y; }`
+	l := lexer.New([]byte(input))
+	p := parser.New(l)
+	program := p.ParseProgram()
+	assertParseErrors(t, p, 0)
+
+	require.Len(t, program.Statements, 1)
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(
+		t,
+		ok,
+		fmt.Sprintf(
+			"expected program.Statements[0] to be type of *ast.ExpressionStatement but got %T",
+			program.Statements[0],
+		),
+	)
+
+	function, ok := stmt.Expression.(*ast.FunctionLiteral)
+	require.True(t,
+		ok,
+		fmt.Sprintf("expected stmt.Expression to be type of *ast.FunctionLiteral but got %T", stmt),
+	)
+	require.Len(t, function.Parameters, 2)
+
+	testLiteralExpression(t, function.Parameters[0], []byte("x"))
+	testLiteralExpression(t, function.Parameters[1], []byte("y"))
+	require.Len(t, function.Body.Statements, 1)
+
+	bodyStmt, ok := function.Body.Statements[0].(*ast.ExpressionStatement)
+	require.True(
+		t,
+		ok,
+		fmt.Sprintf(
+			"expected function.Body.Statements[0] to be type of *ast.BlockStatement but got %T",
+			stmt,
+		),
+	)
+
+	testInfixExpression(t, bodyStmt.Expression, []byte("x"), "+", []byte("y"))
+}
+
+func TestFunctionParameterParsing(t *testing.T) {
+	tests := []struct {
+		input          string
+		expectedParams []string
+	}{
+		{input: "fn() {};", expectedParams: []string{}},
+		{input: "fn(x) {};", expectedParams: []string{"x"}},
+		{input: "fn(x, y, z) {};", expectedParams: []string{"x", "y", "z"}},
+	}
+
+	for _, tc := range tests {
+		l := lexer.New([]byte(tc.input))
+		p := parser.New(l)
+		program := p.ParseProgram()
+		assertParseErrors(t, p, 0)
+
+		stmt := program.Statements[0].(*ast.ExpressionStatement)
+		function := stmt.Expression.(*ast.FunctionLiteral)
+
+		require.Len(t, function.Parameters, len(tc.expectedParams))
+
+		for i, ident := range tc.expectedParams {
+			testLiteralExpression(t, function.Parameters[i], []byte(ident))
+		}
+	}
+}

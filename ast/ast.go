@@ -22,6 +22,7 @@ var (
 	_ Expression = (*PrefixExpression)(nil)
 	_ Expression = (*IntegerLiteral)(nil)
 	_ Expression = (*IfExpression)(nil)
+	_ Expression = (*FunctionLiteral)(nil)
 	_ Statement  = (*LetStatement)(nil)
 	_ Statement  = (*ReturnStatement)(nil)
 	_ Statement  = (*ExpressionStatement)(nil)
@@ -224,4 +225,22 @@ func (ix *IfExpression) String() string {
 	}
 
 	return fmt.Sprintf("%selse%s", ifStr, ix.Alternative.String())
+}
+
+type FunctionLiteral struct {
+	Token      token.Token // the 'fn' token
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+func (fl *FunctionLiteral) expressionNode()      {}
+func (fl *FunctionLiteral) TokenLiteral() string { return string(fl.Token.Literal) }
+func (fl *FunctionLiteral) String() string {
+	params := make([]string, len(fl.Parameters))
+
+	for i, param := range fl.Parameters {
+		params[i] = param.String()
+	}
+
+	return fmt.Sprintf("%s(%s)%s", fl.TokenLiteral(), strings.Join(params, ","), fl.Body.String())
 }
