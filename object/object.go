@@ -5,8 +5,12 @@ import "fmt"
 var (
 	_ Object = (*Integer)(nil)
 	_ Object = (*Boolean)(nil)
+	_ Object = (*Null)(nil)
+	_ Object = (*ReturnValue)(nil)
+	_ Object = (*ErrorValue)(nil)
 )
 
+//go:generate stringer -type=ObjectType
 type ObjectType uint8
 
 const (
@@ -14,6 +18,7 @@ const (
 	BOOLEAN
 	NULL
 	RETURN_VALUE
+	ERROR_VALUE
 )
 
 type Object interface {
@@ -46,3 +51,10 @@ type ReturnValue struct {
 
 func (r *ReturnValue) Type() ObjectType { return RETURN_VALUE }
 func (r *ReturnValue) Inspect() string  { return r.Value.Inspect() }
+
+type ErrorValue struct {
+	Message string
+}
+
+func (r *ErrorValue) Type() ObjectType { return ERROR_VALUE }
+func (r *ErrorValue) Inspect() string  { return "[error]: " + r.Message }

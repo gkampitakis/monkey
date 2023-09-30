@@ -16,8 +16,9 @@ func testEval(input string) object.Object {
 	l := lexer.New([]byte(input))
 	p := parser.New(l)
 	program := p.ParseProgram()
+	env := object.NewEnvironment()
 
-	return evaluator.Eval(program)
+	return evaluator.Eval(program, env)
 }
 
 func testIntegerObject(t *testing.T, obj object.Object, expected int) {
@@ -161,5 +162,81 @@ func TestReturnStatements(t *testing.T) {
 	for _, tc := range tests {
 		evaluated := testEval(tc.input)
 		testIntegerObject(t, evaluated, tc.expected)
+	}
+}
+
+func TestErrorHandling(t *testing.T) {
+	tests := []struct {
+		input       string
+		expectedMsg string
+	}{
+		{
+			"5 + true;",
+			"type mismatch: INTEGER + BOOLEAN",
+		},
+		{
+			"5 + true; 5;",
+			"type mismatch: INTEGER + BOOLEAN",
+		},
+		{
+			"-true",
+			"unknown operator: -BOOLEAN",
+		},
+		{
+			"true + false;",
+			"unknown operator: BOOLEAN + BOOLEAN",
+		},
+		{
+			"true + false + true + false;",
+			"unknown operator: BOOLEAN + BOOLEAN",
+		},
+		{
+			"5; true + false; 5",
+			"unknown operator: BOOLEAN + BOOLEAN",
+		},
+		{
+			"if (10 > 1) { true + false; }",
+			"unknown operator: BOOLEAN + BOOLEAN",
+		},
+		{
+			`
+if (10 > 1) {
+  if (10 > 1) {
+    return true + false;
+  }
+
+  return 1;
+}
+`,
+			"unknown operator: BOOLEAN + BOOLEAN",
+		},
+		{
+			"foobar",
+			"identifier not found: foobar",
+		},
+	}
+
+	for _, tc := range tests {
+		evaluated := testEval(tc.input)
+
+		require.IsType(t, &object.ErrorValue{}, evaluated)
+		errObj := evaluated.(*object.ErrorValue)
+
+		require.Equal(t, tc.expectedMsg, errObj.Message)
+	}
+}
+
+func TestLetStatements(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int
+	}{
+		{"let a = 5; a;", 5},
+		{"let a = 5;let b = a;b;", 5},
+		{"let a = 5;let b = a;let c = a + b + 5;c;", 15},
+	}
+
+	for _, tc := range tests {
+		testIntegerObject(t, testEval(tc.input), tc.expected)
 	}
 }

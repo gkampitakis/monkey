@@ -11,12 +11,14 @@ import (
 
 	"github.com/gkampitakis/monkey/evaluator"
 	"github.com/gkampitakis/monkey/lexer"
+	"github.com/gkampitakis/monkey/object"
 	"github.com/gkampitakis/monkey/parser"
 )
 
 const PROMPT = ">> "
 
 func Start(in io.Reader, out io.Writer) {
+	env := object.NewEnvironment()
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
@@ -50,7 +52,7 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		evaluated := evaluator.Eval(program)
+		evaluated := evaluator.Eval(program, env)
 		if evaluated != nil {
 			io.WriteString(out, evaluated.Inspect())
 			io.WriteString(out, "\n")
