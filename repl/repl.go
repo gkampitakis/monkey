@@ -1,69 +1,60 @@
 package repl
 
 import (
-	"bufio"
-	"bytes"
-	"fmt"
 	"io"
-	"os"
-	"os/signal"
-	"syscall"
+	"strings"
 
 	"github.com/gkampitakis/monkey/evaluator"
 	"github.com/gkampitakis/monkey/lexer"
 	"github.com/gkampitakis/monkey/object"
 	"github.com/gkampitakis/monkey/parser"
+	cli "github.com/openengineer/go-repl"
 )
 
-const PROMPT = ">> "
+const helpMessage = `help              display this message
+.exit              quit this program`
 
-func Start(in io.Reader, out io.Writer) {
-	env := object.NewEnvironment()
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-
-	scanner := bufio.NewScanner(in)
-	go func() {
-		<-c
-		fmt.Printf("\n(To exit, press Ctrl+C again or type .exit)\n%s", PROMPT)
-		<-c
-		fmt.Fprint(out, "\nSee you next time!\n")
-		os.Exit(0)
-	}()
-	for {
-		fmt.Fprint(out, PROMPT)
-
-		scanned := scanner.Scan()
-		if !scanned {
-			return
-		}
-
-		line := scanner.Bytes()
-		if bytes.Equal(line, []byte(".exit")) {
-			fmt.Fprint(out, "See you next time!\n")
-			os.Exit(0)
-		}
-
-		l := lexer.New(line)
-		p := parser.New(l)
-		program := p.ParseProgram()
-		if len(p.Errors()) != 0 {
-			printParserErrors(out, p.Errors())
-			continue
-		}
-
-		evaluated := evaluator.Eval(program, env)
-		if evaluated != nil {
-			io.WriteString(out, evaluated.Inspect())
-			io.WriteString(out, "\n")
-		}
-	}
+type ReplHandler struct {
+	Repl *cli.Repl
+	Env  *object.Environment
 }
 
-func printParserErrors(out io.Writer, errors []string) {
-	io.WriteString(out, "Woops! We ran into some monkey business here!\n")
-	io.WriteString(out, " parser errors:\n")
-	for _, msg := range errors {
-		io.WriteString(out, "\t"+msg+"\n")
+func (r *ReplHandler) Prompt() string {
+	return ">> "
+}
+
+func (r *ReplHandler) Tab(_ string) string {
+	return ""
+}
+
+func (r *ReplHandler) Eval(line string) string {
+	if line == ".exit" {
+		r.Repl.Quit()
+		return ""
 	}
+	l := lexer.New([]byte(line))
+	p := parser.New(l)
+	program := p.ParseProgram()
+	if len(p.Errors()) != 0 {
+		return printParserErrors(p.Errors())
+	}
+
+	evaluated := evaluator.Eval(program, r.Env)
+	if evaluated != nil {
+		return evaluated.Inspect()
+	}
+
+	return ""
+}
+
+func printParserErrors(errors []string) string {
+	str := strings.Builder{}
+
+	io.WriteString(&str, "Woops! We ran into some monkey business here!\n")
+	io.WriteString(&str, " parser errors:\n")
+	for _, msg := range errors {
+		io.WriteString(&str, "\t"+msg+"\n")
+	}
+
+	return str.String()
 }

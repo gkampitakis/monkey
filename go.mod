@@ -4,6 +4,7 @@ go 1.21.0
 
 require (
 	github.com/gkampitakis/go-snaps v0.4.9-0.20230726211448-5a5908ef7270
+	github.com/openengineer/go-repl v0.2.2
 	github.com/stretchr/testify v1.8.4
 )
 
@@ -19,5 +20,7 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
+	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
+	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

@@ -157,6 +157,25 @@ func TestReturnStatements(t *testing.T) {
 			}
 			return 1;
 		}`, 10},
+		{
+			`
+let f = fn(x) {
+  return x;
+  x + 10;
+};
+f(10);`,
+			10,
+		},
+		{
+			`
+let f = fn(x) {
+   let result = x + 10;
+   return result;
+   return 10;
+};
+f(10);`,
+			20,
+		},
 	}
 
 	for _, tc := range tests {
@@ -239,4 +258,48 @@ func TestLetStatements(t *testing.T) {
 	for _, tc := range tests {
 		testIntegerObject(t, testEval(tc.input), tc.expected)
 	}
+}
+
+func TestFunctionObject(t *testing.T) {
+	input := "fn(x) { x + 2; };"
+
+	evaluate := testEval(input)
+
+	require.IsType(t, &object.Function{}, evaluate)
+	fn := evaluate.(*object.Function)
+
+	require.Len(t, fn.Parameters, 1)
+	require.Equal(t, "x", fn.Parameters[0].String())
+	require.Equal(t, "(x + 2)", fn.Body.String())
+}
+
+func TestFunctionApplication(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int
+	}{
+		// {"let id = fn(x) {x;} id(5);", 5},
+		// {"let id = fn(x) { return x;} id(5);", 5},
+		// {"let double = fn(x) { x*2;} double(5);", 10},
+		// {"let add = fn(x,y) { x+y;} add(5, 5);", 10},
+		// {"let add = fn(x,y) { x+y;} add(5 + 5, add(5, 5));", 20},
+		{"fn(x) { x; }(5)", 5},
+	}
+
+	for _, tc := range tests {
+		testIntegerObject(t, testEval(tc.input), tc.expected)
+	}
+}
+
+func TestClosures(t *testing.T) {
+	input := `
+		let newAdder = fn(x) {
+			fn(y) { x + y;};
+		};
+
+		let addTwo = newAdder(2);
+		addTwo(2);
+	`
+
+	testIntegerObject(t, testEval(input), 4)
 }

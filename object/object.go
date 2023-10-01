@@ -1,6 +1,11 @@
 package object
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/gkampitakis/monkey/ast"
+)
 
 var (
 	_ Object = (*Integer)(nil)
@@ -8,6 +13,7 @@ var (
 	_ Object = (*Null)(nil)
 	_ Object = (*ReturnValue)(nil)
 	_ Object = (*ErrorValue)(nil)
+	_ Object = (*Function)(nil)
 )
 
 //go:generate stringer -type=ObjectType
@@ -19,6 +25,7 @@ const (
 	NULL
 	RETURN_VALUE
 	ERROR_VALUE
+	FUNCTION
 )
 
 type Object interface {
@@ -58,3 +65,20 @@ type ErrorValue struct {
 
 func (r *ErrorValue) Type() ObjectType { return ERROR_VALUE }
 func (r *ErrorValue) Inspect() string  { return "[error]: " + r.Message }
+
+type Function struct {
+	Parameters []*ast.Identifier
+	Body       *ast.BlockStatement
+	Env        *Environment
+}
+
+func (f *Function) Type() ObjectType { return FUNCTION }
+func (f *Function) Inspect() string {
+	params := make([]string, len(f.Parameters))
+
+	for i, param := range f.Parameters {
+		params[i] = param.String()
+	}
+
+	return fmt.Sprintf("fn(%s){\n%s\n}", strings.Join(params, ","), f.Body.String())
+}
