@@ -14,7 +14,10 @@ var (
 	_ Object = (*ReturnValue)(nil)
 	_ Object = (*ErrorValue)(nil)
 	_ Object = (*Function)(nil)
+	_ Object = (*String)(nil)
 )
+
+type BuiltinFunction func(args ...Object) Object
 
 //go:generate stringer -type=ObjectType
 type ObjectType uint8
@@ -27,6 +30,7 @@ const (
 	ERROR_VALUE
 	FUNCTION
 	STRING
+	BUILTIN
 )
 
 type Object interface {
@@ -90,3 +94,10 @@ type String struct {
 
 func (*String) Type() ObjectType  { return STRING }
 func (s *String) Inspect() string { return s.Value }
+
+type Builtin struct {
+	Fn BuiltinFunction
+}
+
+func (*Builtin) Type() ObjectType { return BUILTIN }
+func (*Builtin) Inspect() string  { return "builtin function" }

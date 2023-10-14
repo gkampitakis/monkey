@@ -15,11 +15,12 @@ func _() {
 	_ = x[ERROR_VALUE-4]
 	_ = x[FUNCTION-5]
 	_ = x[STRING-6]
+	_ = x[BUILTIN-7]
 }
 
-const _ObjectType_name = "INTEGERBOOLEANNULLRETURN_VALUEERROR_VALUEFUNCTIONSTRING"
+const _ObjectType_name = "INTEGERBOOLEANNULLRETURN_VALUEERROR_VALUEFUNCTIONSTRINGBUILTIN"
 
-var _ObjectType_index = [...]uint8{0, 7, 14, 18, 30, 41, 49, 55}
+var _ObjectType_index = [...]uint8{0, 7, 14, 18, 30, 41, 49, 55, 62}
 
 func (i ObjectType) String() string {
 	if i >= ObjectType(len(_ObjectType_index)-1) {

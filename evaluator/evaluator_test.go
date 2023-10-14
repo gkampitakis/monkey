@@ -359,3 +359,27 @@ func TestStringLiteral(t *testing.T) {
 		require.True(t, boolean.Value)
 	})
 }
+
+func TestBuiltinFunctions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{`len("")`, 0},
+		{`len("hello world")`, 11},
+		{`len(1)`, "argument type not supported, got INTEGER"},
+		{`len("one", "two")`, "wrong number of arguments. got=2, want=1"},
+	}
+
+	for _, tc := range tests {
+		evaluate := testEval(tc.input)
+		switch expected := tc.expected.(type) {
+		case int:
+			testIntegerObject(t, evaluate, expected)
+		case string:
+			errObject := evaluate.(*object.ErrorValue)
+
+			require.Equal(t, tc.expected, errObject.Message)
+		}
+	}
+}
