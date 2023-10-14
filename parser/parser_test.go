@@ -697,3 +697,16 @@ func TestCallExpressionParameterParsing(t *testing.T) {
 		}
 	}
 }
+
+func TestStringLiteralExpression(t *testing.T) {
+	input := `"hello world"`
+	l := lexer.New([]byte(input))
+	p := parser.New(l)
+	program := p.ParseProgram()
+	assertParseErrors(t, p, 0)
+
+	stmt := program.Statements[0].(*ast.ExpressionStatement)
+	literal := stmt.Expression.(*ast.StringLiteral)
+
+	require.Equal(t, "hello world", string(literal.Value))
+}

@@ -77,6 +77,9 @@ func TestNextToken(t *testing.T) {
 		10 == 10;
 		10 != 9;
 		let value = 10+10;
+		"foobar"
+		"foo bar"
+		"hello \n world \t"		
 		`
 
 		TokensSnapshot(t, input)

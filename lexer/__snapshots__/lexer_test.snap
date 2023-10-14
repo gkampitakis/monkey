@@ -132,5 +132,8 @@
 [PLUS]=>"+"
 [INT]=>"10"
 [SEMICOLON]=>";"
+[STRING]=>"foobar"
+[STRING]=>"foo bar"
+[STRING]=>"hello \\n world \\t"
 [EOF]=>""
 ---

@@ -233,6 +233,10 @@ if (10 > 1) {
 			"foobar",
 			"identifier not found: foobar",
 		},
+		{
+			`"Hello" - "World!`,
+			"unknown operator: STRING - STRING",
+		},
 	}
 
 	for _, tc := range tests {
@@ -302,4 +306,56 @@ func TestClosures(t *testing.T) {
 	`
 
 	testIntegerObject(t, testEval(input), 4)
+}
+
+func TestStringLiteral(t *testing.T) {
+	t.Run("simple", func(t *testing.T) {
+		input := `"Hello World!`
+
+		evaluate := testEval(input)
+
+		require.IsType(t, &object.String{}, evaluate)
+		str := evaluate.(*object.String)
+
+		require.Equal(t, "Hello World!", str.Value)
+	})
+
+	t.Run("concatenation", func(t *testing.T) {
+		input := `"Hello" + " " + "World!"`
+
+		evaluate := testEval(input)
+
+		require.IsType(t, &object.String{}, evaluate)
+		str := evaluate.(*object.String)
+
+		require.Equal(t, "Hello World!", str.Value)
+	})
+
+	t.Run("equality", func(t *testing.T) {
+		input := ` let tmp = "hello";
+		let tmptwo = "hello";
+		tmp == tmptwo;
+		`
+
+		evaluate := testEval(input)
+
+		require.IsType(t, &object.Boolean{}, evaluate)
+		boolean := evaluate.(*object.Boolean)
+
+		require.True(t, boolean.Value)
+	})
+
+	t.Run("inequality", func(t *testing.T) {
+		input := ` let tmp = "hello";
+		let tmptwo = "world";
+		tmp != tmptwo;
+		`
+
+		evaluate := testEval(input)
+
+		require.IsType(t, &object.Boolean{}, evaluate)
+		boolean := evaluate.(*object.Boolean)
+
+		require.True(t, boolean.Value)
+	})
 }

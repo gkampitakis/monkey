@@ -21,6 +21,7 @@ var (
 	_ Expression = (*InfixExpression)(nil)
 	_ Expression = (*PrefixExpression)(nil)
 	_ Expression = (*IntegerLiteral)(nil)
+	_ Expression = (*StringLiteral)(nil)
 	_ Expression = (*IfExpression)(nil)
 	_ Expression = (*FunctionLiteral)(nil)
 	_ Statement  = (*LetStatement)(nil)
@@ -147,6 +148,17 @@ func (i *IntegerLiteral) String() string {
 	}
 
 	return strconv.Itoa(i.Value)
+}
+
+type StringLiteral struct {
+	Token token.Token
+	Value string
+}
+
+func (*StringLiteral) expressionNode()        {}
+func (s *StringLiteral) TokenLiteral() string { return string(s.Token.Literal) }
+func (s *StringLiteral) String() string {
+	return s.Value
 }
 
 type PrefixExpression struct {

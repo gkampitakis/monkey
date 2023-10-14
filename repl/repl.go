@@ -11,9 +11,6 @@ import (
 	cli "github.com/openengineer/go-repl"
 )
 
-const helpMessage = `help              display this message
-.exit              quit this program`
-
 type ReplHandler struct {
 	Repl *cli.Repl
 	Env  *object.Environment
