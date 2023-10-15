@@ -26,6 +26,7 @@ var (
 	_ Expression = (*FunctionLiteral)(nil)
 	_ Expression = (*IndexExpression)(nil)
 	_ Expression = (*ArrayLiteral)(nil)
+	_ Expression = (*HashLiteral)(nil)
 	_ Statement  = (*LetStatement)(nil)
 	_ Statement  = (*ReturnStatement)(nil)
 	_ Statement  = (*ExpressionStatement)(nil)
@@ -302,4 +303,22 @@ type IndexExpression struct {
 
 func (*IndexExpression) expressionNode()         {}
 func (ie *IndexExpression) TokenLiteral() string { return string(ie.Token.Literal) }
-func (ie *IndexExpression) String() string       { return fmt.Sprintf("(%s[%s])", ie.Left, ie.Index) }
+
+func (ie *IndexExpression) String() string { return fmt.Sprintf("(%s[%s])", ie.Left, ie.Index) }
+
+type HashLiteral struct {
+	Token token.Token // the '{' token
+	Pairs map[Expression]Expression
+}
+
+func (*HashLiteral) expressionNode()         {}
+func (hl *HashLiteral) TokenLiteral() string { return string(hl.Token.Literal) }
+func (hl *HashLiteral) String() string {
+	pairs := make([]string, 0, len(hl.Pairs))
+
+	for i, p := range hl.Pairs {
+		pairs = append(pairs, fmt.Sprintf("%q: %q", i.String(), p.String()))
+	}
+
+	return fmt.Sprintf("{\n	%s\n}", strings.Join(pairs, ",\n"))
+}

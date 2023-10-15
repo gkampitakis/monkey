@@ -81,6 +81,7 @@ func TestNextToken(t *testing.T) {
 		"foo bar"
 		"hello \n world \t"		
 		[1, 2];
+		{"foo":"bar"}
 		`
 
 		TokensSnapshot(t, input)

@@ -34,6 +34,8 @@ const (
 	RBRACE
 	LBRACKET
 	RBRACKET
+	COLON
+	STRING_QUOTE
 	// Keywords
 	FUNCTION
 	LET
@@ -42,7 +44,6 @@ const (
 	ELSE
 	TRUE
 	FALSE
-	STRING
 )
 
 var keywords = map[string]TokenType{
