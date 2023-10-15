@@ -874,3 +874,42 @@ func TestParsingHashLiteralsWithExpressions(t *testing.T) {
 		testFunc(value)
 	}
 }
+
+func TestParseWhileExpression(t *testing.T) {
+	input := `while(i < x) { i }`
+	l := lexer.New([]byte(input))
+	p := parser.New(l)
+	program := p.ParseProgram()
+	assertParseErrors(t, p, 0)
+
+	require.Len(t, program.Statements, 1)
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(
+		t,
+		ok,
+		fmt.Sprintf(
+			"expected program.Statements[0] to be type of *ast.ExpressionStatement but got %T",
+			program.Statements[0],
+		),
+	)
+
+	exp, ok := stmt.Expression.(*ast.WhileExpression)
+	require.True(t,
+		ok,
+		fmt.Sprintf("expected stmt.Expression to be type of *ast.IfExpression but got %T", stmt),
+	)
+
+	testInfixExpression(t, exp.Condition, []byte("i"), "<", []byte("x"))
+
+	require.Len(t, exp.Consequence.Statements, 1)
+	consequence, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	require.True(
+		t,
+		ok,
+		fmt.Sprintf(
+			"expected exp.Consequence.Statements[0] to be type of *ast.ExpressionStatement but got %T",
+			stmt,
+		),
+	)
+	testIdentifier(t, consequence.Expression, []byte("i"))
+}

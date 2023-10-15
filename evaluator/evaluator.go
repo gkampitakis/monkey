@@ -40,6 +40,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalInfixExpression(node.Operator, left, right)
 	case *ast.IfExpression:
 		return evalIfExpression(node, env)
+	case *ast.WhileExpression:
+		return evalWhileExpression(node, env)
 	case *ast.LetStatement:
 		val := Eval(node.Value, env)
 		if isError(val) {
@@ -384,6 +386,23 @@ func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Obje
 	}
 
 	return &object.Hash{Pairs: pairs}
+}
+
+func evalWhileExpression(node *ast.WhileExpression, env *object.Environment) object.Object {
+	for {
+		condition := Eval(node.Condition, env)
+		if isError(condition) {
+			return condition
+		}
+		if !isTruthy(condition) {
+			break
+		}
+		if result := Eval(node.Consequence, env); !isError(result) &&
+			(result.Type() == object.RETURN_VALUE || result.Type() == object.ERROR_VALUE) {
+			return result
+		}
+	}
+	return NULL
 }
 
 func nativeBoolToBooleanObject(input bool) *object.Boolean {

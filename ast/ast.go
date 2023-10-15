@@ -27,6 +27,7 @@ var (
 	_ Expression = (*IndexExpression)(nil)
 	_ Expression = (*ArrayLiteral)(nil)
 	_ Expression = (*HashLiteral)(nil)
+	_ Expression = (*WhileExpression)(nil)
 	_ Statement  = (*LetStatement)(nil)
 	_ Statement  = (*ReturnStatement)(nil)
 	_ Statement  = (*ExpressionStatement)(nil)
@@ -321,4 +322,16 @@ func (hl *HashLiteral) String() string {
 	}
 
 	return fmt.Sprintf("{\n	%s\n}", strings.Join(pairs, ",\n"))
+}
+
+type WhileExpression struct {
+	Token       token.Token // the 'while' token
+	Condition   Expression
+	Consequence *BlockStatement
+}
+
+func (*WhileExpression) expressionNode()         {}
+func (we *WhileExpression) TokenLiteral() string { return string(we.Token.Literal) }
+func (we *WhileExpression) String() string {
+	return fmt.Sprintf("while(%s) %s", we.Condition.String(), we.Consequence.String())
 }
