@@ -24,6 +24,8 @@ var (
 	_ Expression = (*StringLiteral)(nil)
 	_ Expression = (*IfExpression)(nil)
 	_ Expression = (*FunctionLiteral)(nil)
+	_ Expression = (*IndexExpression)(nil)
+	_ Expression = (*ArrayLiteral)(nil)
 	_ Statement  = (*LetStatement)(nil)
 	_ Statement  = (*ReturnStatement)(nil)
 	_ Statement  = (*ExpressionStatement)(nil)
@@ -245,7 +247,7 @@ type FunctionLiteral struct {
 	Body       *BlockStatement
 }
 
-func (fl *FunctionLiteral) expressionNode()      {}
+func (*FunctionLiteral) expressionNode()         {}
 func (fl *FunctionLiteral) TokenLiteral() string { return string(fl.Token.Literal) }
 func (fl *FunctionLiteral) String() string {
 	params := make([]string, len(fl.Parameters))
@@ -263,7 +265,7 @@ type CallExpression struct {
 	Arguments []Expression
 }
 
-func (ce *CallExpression) expressionNode()      {}
+func (*CallExpression) expressionNode()         {}
 func (ce *CallExpression) TokenLiteral() string { return string(ce.Token.Literal) }
 func (ce *CallExpression) String() string {
 	args := make([]string, len(ce.Arguments))
@@ -274,3 +276,30 @@ func (ce *CallExpression) String() string {
 
 	return fmt.Sprintf("%s(%s)", ce.Function.String(), strings.Join(args, ", "))
 }
+
+type ArrayLiteral struct {
+	Token    token.Token // the '[' token
+	Elements []Expression
+}
+
+func (*ArrayLiteral) expressionNode()         {}
+func (al *ArrayLiteral) TokenLiteral() string { return string(al.Token.Literal) }
+func (al *ArrayLiteral) String() string {
+	args := make([]string, len(al.Elements))
+
+	for i, arg := range al.Elements {
+		args[i] = arg.String()
+	}
+
+	return fmt.Sprintf("[%s]", strings.Join(args, ", "))
+}
+
+type IndexExpression struct {
+	Token token.Token // the [ token
+	Left  Expression
+	Index Expression
+}
+
+func (*IndexExpression) expressionNode()         {}
+func (ie *IndexExpression) TokenLiteral() string { return string(ie.Token.Literal) }
+func (ie *IndexExpression) String() string       { return fmt.Sprintf("(%s[%s])", ie.Left, ie.Index) }

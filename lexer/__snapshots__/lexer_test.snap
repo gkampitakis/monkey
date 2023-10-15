@@ -135,5 +135,11 @@
 [STRING]=>"foobar"
 [STRING]=>"foo bar"
 [STRING]=>"hello \\n world \\t"
+[LBRACKET]=>"["
+[INT]=>"1"
+[COMMA]=>","
+[INT]=>"2"
+[RBRACKET]=>"]"
+[SEMICOLON]=>";"
 [EOF]=>""
 ---

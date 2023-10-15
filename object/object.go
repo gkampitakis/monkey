@@ -15,6 +15,7 @@ var (
 	_ Object = (*ErrorValue)(nil)
 	_ Object = (*Function)(nil)
 	_ Object = (*String)(nil)
+	_ Object = (*Array)(nil)
 )
 
 type BuiltinFunction func(args ...Object) Object
@@ -31,6 +32,7 @@ const (
 	FUNCTION
 	STRING
 	BUILTIN
+	ARRAY
 )
 
 type Object interface {
@@ -101,3 +103,18 @@ type Builtin struct {
 
 func (*Builtin) Type() ObjectType { return BUILTIN }
 func (*Builtin) Inspect() string  { return "builtin function" }
+
+type Array struct {
+	Elements []Object
+}
+
+func (*Array) Type() ObjectType { return ARRAY }
+func (a *Array) Inspect() string {
+	elements := make([]string, len(a.Elements))
+
+	for i, e := range a.Elements {
+		elements[i] = e.Inspect()
+	}
+
+	return fmt.Sprintf("[%s]", strings.Join(elements, ","))
+}
